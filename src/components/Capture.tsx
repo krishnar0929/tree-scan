@@ -63,17 +63,19 @@ export function Capture({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <Header title="Take photos" subtitle={`${count} added · 3 required`} onBack={onBack} />
+      <Header title="Add photos" subtitle={`Take with camera or upload · ${count} added, 3 required`} onBack={onBack} />
       <div className="flex flex-1 flex-col gap-3 px-4 pb-4">
         {SLOT_DEFS.map((d, i) => {
           const src = photos[d.slot];
-          const inputId = `photo-${d.slot}`;
+          const cameraId = `camera-${d.slot}`;
+          const uploadId = `upload-${d.slot}`;
           return (
             <div key={d.slot}>
               {i === 3 && (
                 <p className="mb-2 mt-2 text-xs font-bold uppercase tracking-wider text-muted">Optional — each one raises confidence</p>
               )}
-              <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3">
+              <div className="rounded-2xl border border-line bg-white p-3">
+              <div className="flex items-center gap-3">
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-soft">
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -89,33 +91,64 @@ export function Capture({
                   </p>
                   <p className="text-[13px] leading-snug text-muted">{d.tip}</p>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <label
-                    htmlFor={inputId}
-                    className={[
-                      "flex h-11 cursor-pointer items-center rounded-xl px-3 text-sm font-bold",
-                      src ? "border border-field bg-white text-ink" : "bg-forest text-white hover:bg-forest-dark",
-                    ].join(" ")}
+                {src && (
+                  <button
+                    type="button"
+                    onClick={() => remove(d.slot)}
+                    className="h-11 shrink-0 px-1 text-xs font-semibold text-muted underline"
                   >
-                    {busy === d.slot ? "…" : src ? "Retake" : "Add"}
-                  </label>
-                  <input
-                    id={inputId}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="sr-only"
-                    onChange={(e) => {
-                      void handleFile(d.slot, e.target.files?.[0]);
-                      e.target.value = "";
-                    }}
-                  />
-                  {src && (
-                    <button type="button" onClick={() => remove(d.slot)} className="text-xs font-semibold text-muted underline">
-                      Remove
-                    </button>
-                  )}
-                </div>
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <label
+                  htmlFor={cameraId}
+                  className={[
+                    "flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl text-sm font-bold",
+                    src ? "border border-field bg-white text-ink" : "bg-forest text-white hover:bg-forest-dark",
+                  ].join(" ")}
+                >
+                  <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                    <circle cx="12" cy="13" r="3.5" />
+                  </svg>
+                  {busy === d.slot ? "…" : src ? "Retake" : "Camera"}
+                </label>
+                <label
+                  htmlFor={uploadId}
+                  className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-field bg-white text-sm font-bold text-ink hover:border-forest"
+                >
+                  <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="16" rx="2" />
+                    <circle cx="9" cy="10" r="2" />
+                    <path d="M21 16l-5-5-8 9" />
+                  </svg>
+                  {src ? "Replace" : "Upload"}
+                </label>
+                {/* capture="environment" opens the rear camera directly; the second input opens the photo library. */}
+                <input
+                  id={cameraId}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={(e) => {
+                    void handleFile(d.slot, e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  id={uploadId}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    void handleFile(d.slot, e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
               </div>
             </div>
           );

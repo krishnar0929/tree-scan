@@ -10,7 +10,8 @@ and what to do next.
 ## How it works
 
 1. **Capture** — 3 required photos (full tree, trunk base, bark close-up) plus up to 4 optional
-   ones (leaves, opposite side, crown, problem spot). Photos are resized in the browser to
+   ones (leaves, opposite side, crown, problem spot). Each slot can use the camera directly or
+   upload from the photo library. Photos are resized in the browser to
    ~1280 px JPEG before upload.
 2. **Questions** — distance to the house, what it could fall on, recent changes, ownership,
    optional trunk circumference and notes. Date and approximate location are added automatically
