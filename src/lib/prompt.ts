@@ -25,7 +25,7 @@ Rules:
 - Actions: 1–5 practical steps, most urgent first.
 - If the photos do not show a tree, set is_tree false and explain in photo_issues; fill other fields with zeros and empty strings/lists.
 - Write in plain, calm language for a homeowner. No jargon without a short explanation.
-Always respond by calling the submit_assessment tool.`;
+You MUST respond by calling the submit_assessment tool exactly once, with every required field. Do not reply with plain text.`;
 
 const DISTANCE_TEXT: Record<string, string> = {
   "<25": "under 25 ft",

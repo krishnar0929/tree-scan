@@ -69,10 +69,11 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: 2500,
+        max_tokens: 8000,
         system: SYSTEM_PROMPT,
         tools: [ASSESSMENT_TOOL],
-        tool_choice: { type: "tool", name: ASSESSMENT_TOOL.name },
+        // Some models reject forced tool_choice, so leave it on "auto" and require the tool in the prompt.
+        tool_choice: { type: "auto" },
         messages: [
           {
             role: "user",
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
               ...imageBlocks,
               {
                 type: "text",
-                text: `Homeowner's answers and context:\n${describeAnswers(answers, context)}\n\nAssess this tree.`,
+                text: `Homeowner's answers and context:\n${describeAnswers(answers, context)}\n\nAssess this tree and submit the result with the submit_assessment tool.`,
               },
             ],
           },
@@ -100,12 +101,26 @@ export async function POST(req: Request) {
   }
 
   const data = (await apiRes.json()) as {
-    content?: { type: string; name?: string; input?: unknown }[];
+    content?: { type: string; name?: string; input?: unknown; text?: string }[];
   };
   const tool = data.content?.find((b) => b.type === "tool_use" && b.name === ASSESSMENT_TOOL.name);
-  if (!tool?.input) return bad("The analysis came back empty. Try again.", 502);
+  let raw: unknown = tool?.input;
+  if (!raw) {
+    // Fallback: the model answered in text. Pull out the first JSON object.
+    const text = (data.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("\n");
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      try {
+        raw = JSON.parse(text.slice(start, end + 1));
+      } catch {
+        raw = undefined;
+      }
+    }
+  }
+  if (!raw || typeof raw !== "object") return bad("The analysis came back empty. Try again.", 502);
 
-  const res: AssessResponse = { assessment: normalize(tool.input as Partial<Assessment>), demo: false };
+  const res: AssessResponse = { assessment: normalize(raw as Partial<Assessment>), demo: false };
   return NextResponse.json(res);
 }
 
