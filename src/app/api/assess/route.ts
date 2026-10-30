@@ -96,7 +96,7 @@ export async function POST(req: Request) {
   if (!apiRes.ok) {
     const text = await apiRes.text();
     console.error("Anthropic API error", apiRes.status, text.slice(0, 500));
-    return bad("The analysis service returned an error. Try again.", 502);
+    return bad(explainApiError(apiRes.status, text), 502);
   }
 
   const data = (await apiRes.json()) as {
@@ -107,6 +107,36 @@ export async function POST(req: Request) {
 
   const res: AssessResponse = { assessment: normalize(tool.input as Partial<Assessment>), demo: false };
   return NextResponse.json(res);
+}
+
+/** Turn an Anthropic API error into a message that says what to fix. */
+function explainApiError(status: number, body: string): string {
+  let type = "";
+  let message = "";
+  try {
+    const j = JSON.parse(body) as { error?: { type?: string; message?: string } };
+    type = j.error?.type ?? "";
+    message = j.error?.message ?? "";
+  } catch {
+    // not JSON
+  }
+  const m = message.toLowerCase();
+  if (status === 401 || type === "authentication_error")
+    return "API key was rejected. Check ANTHROPIC_API_KEY in your Vercel environment variables, then redeploy.";
+  if (status === 403 || type === "permission_error")
+    return "This API key doesn't have permission to use the model. Check the key's workspace in the Claude Console.";
+  if (m.includes("credit") || m.includes("billing"))
+    return "Your Claude API account is out of credits. Add credits under Billing in the Claude Console, then try again.";
+  if (status === 404 || type === "not_found_error")
+    return `Model not found (${process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5"}). Check ANTHROPIC_MODEL.`;
+  if (status === 413 || type === "request_too_large")
+    return "Photos are too large to send together. Remove an optional photo and try again.";
+  if (status === 429 || type === "rate_limit_error")
+    return "Too many requests right now. Wait a minute and try again.";
+  if (status === 529 || type === "overloaded_error")
+    return "The analysis service is busy. Try again in a minute.";
+  const detail = message ? `: ${message.slice(0, 200)}` : "";
+  return `The analysis service returned an error (${status}${detail}). Try again.`;
 }
 
 /** Defensive cleanup so the UI never crashes on a slightly-off model response. */

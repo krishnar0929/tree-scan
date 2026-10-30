@@ -65,9 +65,10 @@ export default function Page() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = (await res.json()) as AssessResponse & { error?: string };
+      if (res.status === 413) throw new Error("Photos are too large to send together. Remove an optional photo and try again.");
+      const json = (await res.json().catch(() => ({}))) as Partial<AssessResponse> & { error?: string };
       if (!res.ok || !json.assessment) throw new Error(json.error || "Something went wrong.");
-      setResult(json);
+      setResult({ assessment: json.assessment, demo: Boolean(json.demo) });
       setStep("report");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
